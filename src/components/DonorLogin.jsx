@@ -6,18 +6,26 @@ import { useAuth } from "./AuthContext"; // Adjust path if needed
 const DonorLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false); // Role checkbox
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
     e.preventDefault();
-    login(); // Update auth context
 
-    if (isAdmin) {
-      navigate("/admin-dashboard");
-    } else {
-      navigate("/donor-dashboard");
-    }
+    // Here, you would normally validate credentials via backend
+    // For demo, we just log in the user with role
+    const userData = {
+      name: "John Doe",
+      email,
+      role: isAdmin ? "admin" : "donor",
+    };
+
+    login(userData); // Update auth context with role
+
+    // Navigate to correct dashboard
+    navigate(isAdmin ? "/admin-dashboard" : "/donor-dashboard");
   };
 
   return (
@@ -33,6 +41,8 @@ const DonorLogin = () => {
             placeholder="Enter your email address"
             className="w-full p-3 rounded-md bg-[#fbeeee] text-[#a94442] focus:outline-none"
             required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
@@ -44,6 +54,8 @@ const DonorLogin = () => {
             placeholder="Enter your password"
             className="w-full p-3 rounded-md bg-[#fbeeee] text-[#a94442] focus:outline-none pr-10"
             required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
           />
           <span
             className="absolute right-3 top-10 transform -translate-y-1/2 cursor-pointer text-[#a94442]"
@@ -62,7 +74,9 @@ const DonorLogin = () => {
             onChange={(e) => setIsAdmin(e.target.checked)}
             className="h-4 w-4"
           />
-          <label htmlFor="adminCheck" className="text-sm text-[#522525]">Login as Admin</label>
+          <label htmlFor="adminCheck" className="text-sm text-[#522525]">
+            Login as Admin
+          </label>
         </div>
 
         {/* Login Button */}

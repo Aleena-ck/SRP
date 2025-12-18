@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../components/AuthContext";
 
 const Header = () => {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   return (
     <header className="text-black shadow-md px-6 py-4 flex justify-between items-center min-h-[50px] bg-white">
@@ -30,31 +30,31 @@ const Header = () => {
           </button>
         </Link>
 
-        {isLoggedIn ? (
-          <Link to="/dashboard">
+      {isLoggedIn ? (
+        <Link to={user?.role === "admin" ? "/admin-dashboard" : "/donor-dashboard"}>
+          <button className="px-4 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition">
+            Dashboard
+          </button>
+        </Link>
+      ) : (
+        <>
+          <Link to="/register">
             <button className="px-4 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition">
-              Dashboard
+              Donor Registration
             </button>
           </Link>
-        ) : (
-          <>
-            <Link to="/register">
-              <button className="px-4 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition">
-                Donor Registration
-              </button>
-            </Link>
-            <Link to="/admin-registration">
-              <button className="px-4 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition">
-                Admin Registration
-              </button>
-            </Link>
-            <Link to="/login">
-              <button className="px-4 py-2 rounded-md font-semibold bg-gray-100 text-black hover:shadow-md transition">
-                Login
-              </button>
-            </Link>
-          </>
-        )}
+          <Link to="/admin-registration">
+            <button className="px-4 py-2 rounded-md font-semibold bg-red-600 text-white hover:bg-red-700 transition">
+              Admin Registration
+            </button>
+          </Link>
+          <Link to="/login">
+            <button className="px-4 py-2 rounded-md font-semibold bg-gray-100 text-black hover:shadow-md transition">
+              Login
+            </button>
+          </Link>
+        </>
+      )}
       </div>
     </header>
   );

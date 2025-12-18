@@ -3,13 +3,23 @@ import { createContext, useContext, useState } from "react";
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  // user object will store name, email, role, etc.
+  const [user, setUser] = useState(null); 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const login = () => setIsLoggedIn(true);
-  const logout = () => setIsLoggedIn(false);
+  // login function now accepts user data including role
+  const login = (userData) => {
+    setUser(userData); // { name, email, role: 'admin' | 'donor' }
+    setIsLoggedIn(true);
+  };
+
+  const logout = () => {
+    setUser(null);
+    setIsLoggedIn(false);
+  };
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ isLoggedIn, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
