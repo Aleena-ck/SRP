@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const donorSchema = new mongoose.Schema({
-    // User reference
+    // User reference (ONLY this - rest comes from User model)
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -9,27 +9,7 @@ const donorSchema = new mongoose.Schema({
         unique: true
     },
     
-    // Basic Information from second file
-    name: {
-        type: String,
-        required: [true, 'Please enter your name'],
-        trim: true
-    },
-    email: {
-        type: String,
-        required: [true, 'Please enter your email'],
-        unique: true,
-        lowercase: true,
-        trim: true,
-        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
-    },
-    phone: {
-        type: String,
-        required: [true, 'Please enter your phone number'],
-        match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
-    },
-    
-    // Personal Details
+    // Personal Details (donor-specific)
     age: {
         type: Number,
         required: [true, 'Please enter your age'],
@@ -42,11 +22,6 @@ const donorSchema = new mongoose.Schema({
         required: [true, 'Please select your gender']
     },
     dateOfBirth: Date,
-    bloodGroup: {
-        type: String,
-        required: [true, 'Please select blood group'],
-        enum: ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']
-    },
     
     // Guardian Information
     guardianName: {
@@ -86,6 +61,7 @@ const donorSchema = new mongoose.Schema({
             type: String,
             required: [true, 'Please enter admission number'],
             unique: true,
+            sparse: true,
             trim: true
         },
         department: {
@@ -93,8 +69,14 @@ const donorSchema = new mongoose.Schema({
             required: [true, 'Please select department'],
             trim: true
         },
-        yearOfStudy: String,
-        university: String
+        yearOfStudy: {
+            type: String,
+            trim: true
+        },
+        university: {
+            type: String,
+            trim: true
+        }
     },
     
     // Address
@@ -133,7 +115,10 @@ const donorSchema = new mongoose.Schema({
     },
     
     // Donation History & Eligibility
-    lastDonationDate: Date,
+    lastDonationDate: {
+        type: Date,
+        default: null
+    },
     nextEligibleDate: {
         type: Date,
         default: Date.now
@@ -210,34 +195,42 @@ const donorSchema = new mongoose.Schema({
     },
     averageDonationInterval: Number,
     
-    // Emergency Contact (other than guardian)
+    // Emergency Contacts
     emergencyContacts: [{
-        name: String,
-        relationship: String,
-        phone: String,
-        isPrimary: Boolean
+        name: {
+            type: String,
+            trim: true
+        },
+        relationship: {
+            type: String,
+            trim: true
+        },
+        phone: {
+            type: String,
+            match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
+        },
+        isPrimary: {
+            type: Boolean,
+            default: false
+        }
     }],
     
     // Documents
     documents: [{
-        type: { type: String, enum: ['ID Proof', 'Medical Certificate', 'Other'] },
+        type: {
+            type: String,
+            enum: ['ID Proof', 'Medical Certificate', 'Other']
+        },
         url: String,
         uploadedAt: {
             type: Date,
             default: Date.now
         },
-        verified: { type: Boolean, default: false }
+        verified: {
+            type: Boolean,
+            default: false
+        }
     }],
-    
-    // Timestamps
-    createdAt: {
-        type: Date,
-        default: Date.now
-    },
-    updatedAt: {
-        type: Date,
-        default: Date.now
-    },
     
     // Status flags
     isActive: {
@@ -248,7 +241,10 @@ const donorSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
-    verificationNotes: String
+    verificationNotes: {
+        type: String,
+        trim: true
+    }
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -258,12 +254,12 @@ const donorSchema = new mongoose.Schema({
 // Virtual for full address
 donorSchema.virtual('fullAddress').get(function() {
     const parts = [];
-    if (this.address.street) parts.push(this.address.street);
-    if (this.address.city) parts.push(this.address.city);
-    if (this.address.district) parts.push(this.address.district);
-    if (this.address.state) parts.push(this.address.state);
-    if (this.address.pincode) parts.push(`- ${this.address.pincode}`);
-    return parts.join(', ');
+    if (this.address?.street) parts.push(this.address.street);
+    if (this.address?.city) parts.push(this.address.city);
+    if (this.address?.district) parts.push(this.address.district);
+    if (this.address?.state) parts.push(this.address.state);
+    if (this.address?.pincode) parts.push(`- ${this.address.pincode}`);
+    return parts.join(', ') || 'Address not provided';
 });
 
 // Virtual for calculated age
@@ -279,21 +275,25 @@ donorSchema.virtual('calculatedAge').get(function() {
     return age;
 });
 
-// Virtual for college details summary
-donorSchema.virtual('collegeInfo').get(function() {
-    const college = this.collegeDetails;
-    if (!college || !college.collegeName) return '';
-    
-    const parts = [];
-    parts.push(college.collegeName);
-    if (college.department) parts.push(college.department);
-    if (college.yearOfStudy) parts.push(`Year: ${college.yearOfStudy}`);
-    if (college.university) parts.push(`University: ${college.university}`);
-    
-    return parts.join(' | ');
+// Virtual to get user data (for population)
+donorSchema.virtual('user', {
+    ref: 'User',
+    localField: 'userId',
+    foreignField: '_id',
+    justOne: true
 });
 
-// Pre-save middleware to update age from dateOfBirth if available
+// Virtual for formatted donor ID
+donorSchema.virtual('formattedDonorId').get(function() {
+    // Format: LBD-YYYYMMDD-XXXX (last 4 chars of ID)
+    const datePart = this.createdAt 
+        ? this.createdAt.toISOString().slice(0,10).replace(/-/g, '')
+        : new Date().toISOString().slice(0,10).replace(/-/g, '');
+    const idPart = this._id.toString().slice(-4).toUpperCase();
+    return `LBD-${datePart}-${idPart}`;
+});
+
+// Pre-save middleware
 donorSchema.pre('save', function(next) {
     if (this.dateOfBirth && !this.isModified('age')) {
         this.age = this.calculatedAge;
@@ -302,15 +302,14 @@ donorSchema.pre('save', function(next) {
     next();
 });
 
-// Indexes
+// Indexes (NO email index!)
+donorSchema.index({ userId: 1 });
 donorSchema.index({ "address.coordinates": "2dsphere" });
 donorSchema.index({ "collegeDetails.collegeName": 1 });
-donorSchema.index({ bloodGroup: 1, isAvailable: 1 });
-donorSchema.index({ email: 1 }, { unique: true });
-donorSchema.index({ "collegeDetails.admissionNumber": 1 }, { unique: true });
-donorSchema.index({ phone: 1 });
-donorSchema.index({ isActive: 1, isVerified: 1 });
+donorSchema.index({ "collegeDetails.department": 1 });
+donorSchema.index({ isAvailable: 1, isActive: 1 });
 donorSchema.index({ nextEligibleDate: 1 });
+donorSchema.index({ "collegeDetails.admissionNumber": 1 }, { unique: true, sparse: true });
 
 // Update next eligible date after donation
 donorSchema.methods.updateNextEligibleDate = function() {
@@ -324,22 +323,22 @@ donorSchema.methods.updateNextEligibleDate = function() {
 
 // Check if donor is eligible
 donorSchema.methods.isEligibleToDonate = function() {
-    if (!this.isAvailable || !this.isActive || !this.isVerified) {
+    if (!this.isAvailable || !this.isActive) {
         return false;
     }
     
     // Age check
-    if (this.calculatedAge < 18 || this.calculatedAge > 65) {
+    if (this.age < 18 || this.age > 65) {
         return false;
     }
     
     // Weight check
-    if (!this.healthInfo.weight || this.healthInfo.weight < 40) {
+    if (this.healthInfo?.weight && this.healthInfo.weight < 40) {
         return false;
     }
     
     // Hemoglobin check
-    if (!this.healthInfo.hemoglobin || this.healthInfo.hemoglobin < 12.5) {
+    if (this.healthInfo?.hemoglobin && this.healthInfo.hemoglobin < 12.5) {
         return false;
     }
     
@@ -351,33 +350,46 @@ donorSchema.methods.isEligibleToDonate = function() {
     return true;
 };
 
-// Get donor summary
-donorSchema.methods.getDonorSummary = function() {
+// Get donor summary (with user data)
+donorSchema.methods.getDonorSummary = async function() {
+    await this.populate('user', 'name email phone bloodGroup');
+    
     return {
-        name: this.name,
-        bloodGroup: this.bloodGroup,
+        donorId: this._id,
+        formattedId: this.formattedDonorId,
+        name: this.user?.name || 'Unknown',
+        bloodGroup: this.user?.bloodGroup || 'Unknown',
+        email: this.user?.email,
+        phone: this.user?.phone,
         age: this.calculatedAge,
-        location: this.address.city || this.collegeDetails.district,
+        gender: this.gender,
+        location: this.address?.city || this.collegeDetails?.district || 'Unknown',
+        college: this.collegeDetails?.collegeName,
+        department: this.collegeDetails?.department,
         totalDonations: this.totalDonations,
+        totalUnits: this.totalUnitsDonated,
         lastDonationDate: this.lastDonationDate,
+        nextEligibleDate: this.nextEligibleDate,
         isEligible: this.isEligibleToDonate(),
         isAvailable: this.isAvailable
     };
 };
 
 // Static method to find eligible donors by blood group
-donorSchema.statics.findEligibleDonors = function(bloodGroup, location = null, maxDistance = 50000) {
+donorSchema.statics.findEligibleDonors = async function(bloodGroup, location = null, maxDistance = 50000) {
+    // First find users with matching blood group
+    const User = mongoose.model('User');
+    const users = await User.find({ bloodGroup, role: 'donor' }).select('_id');
+    const userIds = users.map(u => u._id);
+    
     const query = {
-        bloodGroup: bloodGroup,
+        userId: { $in: userIds },
         isAvailable: true,
         isActive: true,
-        isVerified: true,
-        nextEligibleDate: { $lte: new Date() },
-        'healthInfo.weight': { $gte: 40 },
-        'healthInfo.hemoglobin': { $gte: 12.5 }
+        nextEligibleDate: { $lte: new Date() }
     };
     
-    if (location && location.coordinates) {
+    if (location && location.coordinates && location.coordinates[0] !== 0 && location.coordinates[1] !== 0) {
         query['address.coordinates'] = {
             $near: {
                 $geometry: {
@@ -389,10 +401,25 @@ donorSchema.statics.findEligibleDonors = function(bloodGroup, location = null, m
         };
     }
     
-    return this.find(query)
-        .select('name bloodGroup phone email address collegeDetails lastDonationDate totalDonations')
+    const donors = await this.find(query)
+        .populate('user', 'name phone email bloodGroup')
         .sort({ lastDonationDate: -1, totalDonations: -1 })
         .limit(50);
+    
+    return donors.map(d => ({
+        id: d._id,
+        formattedId: d.formattedDonorId,
+        name: d.user?.name,
+        phone: d.user?.phone,
+        email: d.user?.email,
+        bloodGroup: d.user?.bloodGroup,
+        location: d.address?.city || d.collegeDetails?.district || 'Unknown',
+        college: d.collegeDetails?.collegeName,
+        department: d.collegeDetails?.department,
+        lastDonated: d.lastDonationDate,
+        totalDonations: d.totalDonations,
+        isEligible: d.isEligibleToDonate()
+    }));
 };
 
 // Static method to get donor statistics
@@ -406,6 +433,7 @@ donorSchema.statics.getDonorStats = async function() {
                 verifiedDonors: { $sum: { $cond: [{ $eq: ["$isVerified", true] }, 1, 0] } },
                 availableDonors: { $sum: { $cond: [{ $eq: ["$isAvailable", true] }, 1, 0] } },
                 totalDonations: { $sum: "$totalDonations" },
+                totalUnits: { $sum: "$totalUnitsDonated" },
                 avgDonations: { $avg: "$totalDonations" }
             }
         },
@@ -417,6 +445,7 @@ donorSchema.statics.getDonorStats = async function() {
                 verifiedDonors: 1,
                 availableDonors: 1,
                 totalDonations: 1,
+                totalUnits: 1,
                 avgDonations: { $round: ["$avgDonations", 2] }
             }
         }
@@ -428,8 +457,19 @@ donorSchema.statics.getDonorStats = async function() {
         verifiedDonors: 0,
         availableDonors: 0,
         totalDonations: 0,
+        totalUnits: 0,
         avgDonations: 0
     };
+};
+
+// Static method to get donor count before a specific donor
+donorSchema.statics.getCountBeforeDonor = async function(donorId) {
+    const donor = await this.findById(donorId);
+    if (!donor) return 0;
+    
+    return await this.countDocuments({
+        createdAt: { $lt: donor.createdAt }
+    });
 };
 
 module.exports = mongoose.model('Donor', donorSchema);

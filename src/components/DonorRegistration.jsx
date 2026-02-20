@@ -70,19 +70,42 @@ const DonorRegistration = () => {
       return;
     }
 
+    // Phone number validation
+    if (!/^\d{10}$/.test(formData.phone)) {
+      toast.error('Phone number must be 10 digits');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(formData.guardianPhone)) {
+      toast.error('Guardian phone number must be 10 digits');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const result = await registerDonor(formData);
+      // Convert age to number
+      const dataToSend = {
+        ...formData,
+        age: parseInt(formData.age)
+      };
+      
+      console.log('Sending data:', dataToSend); // Debug log
+      
+      const result = await registerDonor(dataToSend);
       
       if (result.success) {
-        toast.success('Registration successful!');
+        toast.success('Registration successful! Redirecting to dashboard...');
         setTimeout(() => {
           navigate('/donor-dashboard');
-        }, 1500);
+        }, 2000);
+      } else {
+        // Show validation errors
+        toast.error(result.message || 'Registration failed. Please check all fields.');
       }
     } catch (error) {
-      toast.error(error.message || 'Registration failed. Please try again.');
+      toast.error('Registration failed. Please try again.');
+      console.error('Registration error:', error);
     } finally {
       setLoading(false);
     }
@@ -118,9 +141,11 @@ const DonorRegistration = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            placeholder="Enter phone number" 
+            placeholder="10 digit mobile number" 
             className="w-full p-3 rounded-md bg-[#fbeeee]" 
             required
+            pattern="[0-9]{10}"
+            title="Please enter exactly 10 digits"
             disabled={loading}
           />
         </div>
@@ -156,12 +181,28 @@ const DonorRegistration = () => {
         </div>
 
         <div>
+          <label className="block mb-1">Password *</label>
+          <input 
+            type="password" 
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="Min 6 characters" 
+            className="w-full p-3 rounded-md bg-[#fbeeee]" 
+            required
+            minLength="6"
+            disabled={loading}
+          />
+        </div>
+
+        <div>
           <label className="block mb-1">Blood Group *</label>
           <select 
             name="bloodGroup"
             value={formData.bloodGroup}
             onChange={handleChange}
             className="w-full p-3 rounded-md bg-[#fbeeee]"
+            required
             disabled={loading}
           >
             <option value="O+">O+</option>
@@ -173,20 +214,6 @@ const DonorRegistration = () => {
             <option value="B-">B-</option>
             <option value="AB-">AB-</option>
           </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">Guardian name *</label>
-          <input 
-            type="text" 
-            name="guardianName"
-            value={formData.guardianName}
-            onChange={handleChange}
-            placeholder="Enter Guardian's name" 
-            className="w-full p-3 rounded-md bg-[#fbeeee]" 
-            required
-            disabled={loading}
-          />
         </div>
 
         <div>
@@ -207,13 +234,27 @@ const DonorRegistration = () => {
         </div>
 
         <div>
-          <label className="block mb-1">How are you related to Guardian? *</label>
+          <label className="block mb-1">Guardian name *</label>
+          <input 
+            type="text" 
+            name="guardianName"
+            value={formData.guardianName}
+            onChange={handleChange}
+            placeholder="Enter Guardian's name" 
+            className="w-full p-3 rounded-md bg-[#fbeeee]" 
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Relationship with Guardian *</label>
           <input 
             type="text" 
             name="guardianRelation"
             value={formData.guardianRelation}
             onChange={handleChange}
-            placeholder="Enter relationship" 
+            placeholder="e.g., Father, Mother, Spouse" 
             className="w-full p-3 rounded-md bg-[#fbeeee]" 
             required
             disabled={loading}
@@ -227,24 +268,11 @@ const DonorRegistration = () => {
             name="guardianPhone"
             value={formData.guardianPhone}
             onChange={handleChange}
-            placeholder="Enter Guardian's phone number" 
+            placeholder="10 digit guardian mobile number" 
             className="w-full p-3 rounded-md bg-[#fbeeee]" 
             required
-            disabled={loading}
-          />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block mb-1">Password *</label>
-          <input 
-            type="password" 
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter password (min 6 characters)" 
-            className="w-full p-3 rounded-md bg-[#fbeeee]" 
-            required
-            minLength="6"
+            pattern="[0-9]{10}"
+            title="Please enter exactly 10 digits"
             disabled={loading}
           />
         </div>
@@ -284,6 +312,7 @@ const DonorRegistration = () => {
             <option value="">--Select District--</option>
             <option value="Kollam">Kollam</option>
             <option value="Ernakulam">Ernakulam</option>
+            <option value="Thiruvananthapuram">Thiruvananthapuram</option>
           </select>
         </div>
 
@@ -299,7 +328,8 @@ const DonorRegistration = () => {
           >
             <option value="">--Select College--</option>
             <option value="TKM College of Engineering">TKM College of Engineering</option>
-            <option value="Other College">Other College</option>
+            <option value="College of Engineering Trivandrum">College of Engineering Trivandrum</option>
+            <option value="Government Engineering College">Government Engineering College</option>
           </select>
         </div>
 
@@ -331,6 +361,8 @@ const DonorRegistration = () => {
             <option value="Computer Science">Computer Science</option>
             <option value="Electronics">Electronics</option>
             <option value="Mechanical">Mechanical</option>
+            <option value="Civil">Civil</option>
+            <option value="Electrical">Electrical</option>
           </select>
         </div>
 
@@ -343,6 +375,34 @@ const DonorRegistration = () => {
             value={formData.address.city}
             onChange={handleChange}
             placeholder="Enter city" 
+            className="w-full p-3 rounded-md bg-[#fbeeee]" 
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Address District *</label>
+          <input 
+            type="text" 
+            name="address.district"
+            value={formData.address.district}
+            onChange={handleChange}
+            placeholder="Enter district" 
+            className="w-full p-3 rounded-md bg-[#fbeeee]" 
+            required
+            disabled={loading}
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1">Address State *</label>
+          <input 
+            type="text" 
+            name="address.state"
+            value={formData.address.state}
+            onChange={handleChange}
+            placeholder="Enter state" 
             className="w-full p-3 rounded-md bg-[#fbeeee]" 
             required
             disabled={loading}
@@ -372,164 +432,3 @@ const DonorRegistration = () => {
 };
 
 export default DonorRegistration;
-/*import React, { useState } from "react";
-import { Link } from "react-router-dom";
-
-const DonorRegistration = () => {
-  const [age, setAge] = useState("");
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (parseInt(age) < 18) {
-      alert("You must be at least 18 years old to register.");
-      return;
-    }
-
-    alert("Form submitted successfully!");
-    // You can clear the form or send data to backend here
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto mt-12 p-8 bg-[#fff8f8] rounded-lg shadow-md">
-      <h2 className="text-3xl font-bold mb-8 text-center text-[#1c0d0d]">Registration Form</h2>
-
-      
-      <h3 className="text-xl font-bold mb-4 underline">Personal Details</h3>
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-        <div>
-          <label className="block mb-1">Name</label>
-          <input type="text" placeholder="Enter name" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <div>
-          <label className="block mb-1">Phone no</label>
-          <input type="text" placeholder="Enter phone number" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <div>
-          <label className="block mb-1">Age</label>
-          <input
-            type="number"
-            name="age"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="Enter Age"
-            min="18"
-            className="w-full p-3 rounded-md bg-[#fbeeee]"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block mb-1">Email</label>
-          <input type="email" placeholder="Enter email" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <div>
-          <label className="block mb-1">Blood Group</label>
-          <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-            <option>O+</option>
-            <option>A+</option>
-            <option>B+</option>
-            <option>AB+</option>
-            <option>O-</option>
-            <option>A-</option>
-            <option>B-</option>
-            <option>AB-</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">Guardian name</label>
-          <input type="text" placeholder="Enter Guardian’s name" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <div>
-          <label className="block mb-1">Gender</label>
-          <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-            <option>--Select Gender--</option>
-            <option>Male</option>
-            <option>Female</option>
-            <option>Other</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block mb-1">How are you related to Guardian?</label>
-          <input type="text" placeholder="Enter relationship" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <div className="md:col-span-2">
-          <label className="block mb-1">Guardian Phone no</label>
-          <input type="text" placeholder="Enter Guardian’s phone number" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-        </div>
-
-        <hr className="md:col-span-2 my-10" />
-
-      
-      <h3 className="text-xl font-bold mb-4 underline md:col-span-2">College Details</h3>
-      <div>
-    <label className="block mb-1">State</label>
-    <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-      <option>--Select a State--</option>
-      <option>Kerala</option>
-      <option>Tamil Nadu</option>
-      <option>Karnataka</option>
-    </select>
-  </div>
-
-  <div>
-    <label className="block mb-1">District</label>
-    <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-      <option>--Select District--</option>
-      <option>Kollam</option>
-      <option>Ernakulam</option>
-    </select>
-  </div>
-
-  <div>
-    <label className="block mb-1">College Name</label>
-    <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-      <option>--Select College--</option>
-      <option>TKM College of Engineering</option>
-    </select>
-  </div>
-
-  <div>
-    <label className="block mb-1">Admission Number</label>
-    <input type="text" placeholder="Enter admission number" className="w-full p-3 rounded-md bg-[#fbeeee]" />
-  </div>
-
-  <div>
-    <label className="block mb-1">Department</label>
-    <select className="w-full p-3 rounded-md bg-[#fbeeee]">
-      <option>--Select Department--</option>
-      <option>Computer Science</option>
-      <option>Electronics</option>
-      <option>Mechanical</option>
-    </select>
-  </div>
-
-     
-        <div className="md:col-span-2">
-          <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-md transition">
-            Register
-          </button>
-        </div>
-        
-      <div className="md:col-span-2 text-center text-sm">
-        Already have an account?{" "}
-        <Link to="/login" className="text-red-600 hover:underline">
-          Login now
-        </Link>
-      </div>
-
-        
-        
-      </form>
-
-    </div>
-  );
-};
-
-export default DonorRegistration;*/

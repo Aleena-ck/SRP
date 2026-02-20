@@ -431,3 +431,45 @@ exports.getNearbyDonors = async (req, res) => {
         });
     }
 };
+
+// @desc    Get count of donors registered before a specific donor
+// @route   GET /api/donors/count-before
+// @access  Private
+exports.getDonorCountBefore = async (req, res) => {
+    try {
+        const { donorId } = req.query;
+        
+        if (!donorId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Donor ID is required'
+            });
+        }
+
+        // Find the donor to get their creation date
+        const currentDonor = await Donor.findById(donorId);
+        if (!currentDonor) {
+            return res.status(404).json({
+                success: false,
+                message: 'Donor not found'
+            });
+        }
+
+        // Count donors created before this donor
+        const count = await Donor.countDocuments({
+            createdAt: { $lt: currentDonor.createdAt }
+        });
+
+        res.status(200).json({
+            success: true,
+            count
+        });
+    } catch (error) {
+        console.error('Get donor count error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error',
+            error: error.message
+        });
+    }
+};

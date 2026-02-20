@@ -114,16 +114,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Search */}
-        <div className="mb-8">
-          <input
-            type="text"
-            placeholder="Search donor by blood group or name..."
-            className="w-full p-4 rounded-md bg-[#fbeeee] placeholder-[#a94442] text-[#a94442] outline-none"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+
 
         {/* Table */}
         <h2 className="text-2xl font-semibold mb-4 text-[#1c0d0d]">Recent Blood Requests</h2>

@@ -36,9 +36,20 @@ exports.registerDonor = async (req, res) => {
         });
 
         // Create donor profile
+        // Create donor profile - ONLY donor-specific fields
         const donor = await Donor.create({
             userId: user._id,
-            ...donorData
+            age: donorData.age,
+            gender: donorData.gender,
+            guardianName: donorData.guardianName,
+            guardianPhone: donorData.guardianPhone,
+            guardianRelation: donorData.guardianRelation,
+            collegeDetails: donorData.collegeDetails,
+            address: donorData.address || {
+                city: donorData.collegeDetails?.district || '',
+                district: donorData.collegeDetails?.district || '',
+                state: donorData.collegeDetails?.state || ''
+            }
         });
 
         // Generate token

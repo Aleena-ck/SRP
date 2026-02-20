@@ -19,7 +19,6 @@ const Requests = () => {
             <th className="p-2">Blood Group</th>
             <th className="p-2">Quantity</th>
             <th className="p-2">Status</th>
-            <th className="p-2">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -38,7 +37,7 @@ const Requests = () => {
                   {req.status}
                 </span>
               </td>
-              <td className="p-2 text-red-600 cursor-pointer hover:underline">View</td>
+              
             </tr>
           ))}
         </tbody>
@@ -49,3 +48,7 @@ const Requests = () => {
 };
 
 export default Requests
+
+
+
+

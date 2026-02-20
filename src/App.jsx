@@ -20,10 +20,11 @@ import Requests from "./admin/Requests";
 import Inventory from "./admin/Inventory";
 
 // donor sidebar
-import FindDonors from "./donor/FindDonors"; 
-import FindBlood1 from "./donor/FindBlood1";
-import RequestBlood from "./donor/RequestBlood";
 import MyRequests from "./donor/MyRequests";
+import DonorProfile from './donor/DonorProfile';
+
+
+
 
 function App() {
   return (
@@ -49,9 +50,7 @@ function App() {
             <Route path="/inventory" element={<Inventory />} />
 
             <Route path="/donor-dashboard" element={<DonorDashboard />} />
-            <Route path="/find-donors" element={<FindDonors />} />
-            <Route path="/find-blood1" element={<FindBlood1 />} />
-            <Route path="/request-blood" element={<RequestBlood />} />
+            <Route path="/donor-profile" element={<DonorProfile />} />
             <Route path="/my-requests" element={<MyRequests />} />
           </Routes>
         </div>
